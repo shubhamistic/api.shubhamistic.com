@@ -1,0 +1,11 @@
+.DS_Store
+.idea/
+bin/
+include/
+lib/
+static/
+templates/
+__pycache__/
+pyvenv.cfg
+config/tictactoe/config.py
+models/tictactoe/database/database.sqlite
