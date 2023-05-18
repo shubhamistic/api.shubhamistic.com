@@ -15,13 +15,44 @@
 </div>
 
 
-## Production Commands (Ubuntu)
+## SETUP (Ubuntu)
 
 - SSH into your vpc using security key:
   ```bash
   $ ssh -i path-to-your-pem-file.pem ubuntu@ip
   ```
-  
+
+- Install NGINX
+  ```bash
+  $ sudo apt update
+  $ sudo apt install nginx
+  ```
+
+- open nginx configuration file:
+  ```bash
+  $ sudo nano /etc/nginx/sites-available/default
+  ```
+
+- Clear the contents of the file and add the following lines (SAVE & EXIT).
+  ```
+  $ server {
+    server_name <your-domain.com> <your-vpc-ip-address>;
+    location / {
+        include proxy_params;
+        proxy_pass http://localhost:5000;
+    }
+
+    location /socket.io {
+        include proxy_params;
+        proxy_http_version 1.1;
+        proxy_buffering off;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+        proxy_pass http://localhost:5000/socket.io;
+    }
+  }
+  ```
+
 - Install gunicorn & gevent-websocket in global environment
   ```bash
   $ pip install gunicorn gevent-websocket
@@ -40,6 +71,27 @@
   $ gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 -b 127.0.0.1:5000 app:app
   ```
 
+- **DATABASE CONFIGURATION**
+  - Run the following commands in your mysql command line:
+    - */tictactoe*:
+    ```bash
+    $ CREATE DATABASE tictactoe;
+    
+    $ CREATE TABLE rooms ( 
+          room_code INT PRIMARY KEY, 
+          start_time DATETIME,
+          end_time DATETIME,
+          occupied BOOLEAN DEFAULT FALSE,
+          token CHAR(20)
+      );
+    
+    $ INSERT IGNORE INTO
+      rooms (room_code, start_time, end_time)
+      VALUES (1000, NOW(), NOW());
+    
+    $ COMMIT;
+    ```
+    
 
 ## License
 Distributed under the MIT License. See [LICENSE](LICENSE) for more information.

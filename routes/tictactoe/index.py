@@ -12,7 +12,7 @@ def admin():
     # Logic to handle the /tictactoe/ request
     return {
         "message": "Welcome to tictactoe!",
-        "routes": ["/generate-room-code", "/join-room", "/exit-room"]
+        "routes": ["/generate-room-code GET", "/join-room POST", "/exit-room POST"]
     }
 
 

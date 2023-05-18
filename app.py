@@ -1,13 +1,13 @@
 from flask import Flask
 from flask_cors import CORS
+from os import environ
 from routes.tictactoe.index import tictactoe_routes
 from sockets.tictactoe.socket import socketio
-from config.tictactoe.config import SECRET_KEY
 
 
 app = Flask(__name__)
 CORS(app)
-app.config['SECRET_KEY'] = SECRET_KEY  # put your secret key here (example: "any random string")
+app.config['SECRET_KEY'] = environ.get('SECRET_KEY')  # put your secret key here (example: "any random string")
 socketio.init_app(app, cors_allowed_origins="*", async_mode='gevent')
 
 
@@ -17,7 +17,7 @@ def landingPage():
         "message": "Welcome to api.shubhamistic.com",
         "routes": [
             {
-                "/tictactoe": ["/generate-room-code", "/join-room", "/exit-room"]
+                "/tictactoe": ["/generate-room-code GET", "/join-room POST", "/exit-room POST"]
             }
         ]
     }

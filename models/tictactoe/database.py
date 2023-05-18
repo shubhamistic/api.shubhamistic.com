@@ -1,24 +1,17 @@
-import sqlite3
+import mysql.connector
+from os import environ
 from datetime import datetime, timedelta
 import random
 import string
 
-# checkout database/__init__.py for more information.
-conn = sqlite3.connect('models/tictactoe/database/database.sqlite', check_same_thread=False)
+# connect to MySQL database
+conn = mysql.connector.connect(
+    host='localhost',
+    user=environ.get('DB_USER'),
+    password=environ.get('DB_PASS'),
+    database='tictactoe'
+)
 cur = conn.cursor()
-
-
-# create table rooms
-# cur.execute("""
-#     CREATE TABLE rooms (
-#         room_code INT PRIMARY KEY,
-#         start_time DATE,
-#         end_time DATE,
-#         occupied BOOLEAN DEFAULT FALSE,
-#         token TEXT
-#     );
-# """)
-# conn.commit()
 
 
 # function to find an empty room if available else create an empty room
@@ -33,7 +26,7 @@ def findOrCreateEmptyRoom():
     query = """ 
         SELECT room_code
         FROM rooms 
-        WHERE (?) > end_time
+        WHERE (%s) > end_time
         LIMIT 1;
     """
     cur.execute(query, (current_time,))
@@ -52,9 +45,9 @@ def findOrCreateEmptyRoom():
         room_code = cur.fetchone()[0] + 1
 
         query = """
-            INSERT OR IGNORE 
-            INTO rooms (room_code, start_time, end_time, occupied, token) 
-            VALUES (?, ?, ?, ?, ?)
+            INSERT IGNORE INTO
+            rooms (room_code, start_time, end_time, occupied, token) 
+            VALUES (%s, %s, %s, %s, %s)
         """
         cur.execute(query, (room_code, current_time, end_time, False, token))
         conn.commit()
@@ -66,11 +59,11 @@ def findOrCreateEmptyRoom():
         query = """
             UPDATE rooms
             SET
-            start_time = (?),
-            end_time = (?),
+            start_time = (%s),
+            end_time = (%s),
             occupied = FALSE,
-            token = (?)
-            WHERE room_code = (?);     
+            token = (%s)
+            WHERE room_code = (%s);     
         """
         cur.execute(query, (current_time, end_time, token, room_code))
         conn.commit()
@@ -90,7 +83,7 @@ def joinRoom(room_code):
     query = """ 
         SELECT token
         FROM rooms 
-        WHERE room_code = (?) AND (?) < end_time AND occupied = FALSE
+        WHERE room_code = (%s) AND (%s) < end_time AND occupied = FALSE
         LIMIT 1;
     """
     cur.execute(query, (room_code, current_time))
@@ -103,7 +96,7 @@ def joinRoom(room_code):
         query = """
             UPDATE rooms
             SET occupied = TRUE
-            WHERE room_code = (?);    
+            WHERE room_code = (%s);    
         """
         cur.execute(query, (room_code,))
         conn.commit()
@@ -120,7 +113,7 @@ def isRoomValid(room_code, token):
     query = """ 
         SELECT room_code
         FROM rooms 
-        WHERE token = (?) AND room_code = (?) AND (?) < end_time
+        WHERE token = (%s) AND room_code = (%s) AND (%s) < end_time
         LIMIT 1;
     """
     cur.execute(query, (token, room_code, current_time))
@@ -142,9 +135,9 @@ def destroySession(room_code, token):
         query = """
                    UPDATE rooms
                    SET
-                   end_time = (?),
+                   end_time = (%s),
                    occupied = FALSE
-                   WHERE room_code = (?);    
+                   WHERE room_code = (%s);    
                """
         cur.execute(query, (current_time, room_code))
         conn.commit()
