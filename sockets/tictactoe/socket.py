@@ -4,6 +4,7 @@ from models.tictactoe import database
 import random
 
 socketio = SocketIO()
+namespace = '/tictactoe'
 
 # information about which player joined in which room
 # syntax:rooms = {room_code: [host request.sid, guest request.sid], ...}
@@ -14,12 +15,12 @@ rooms = {}
 info = {}
 
 
-@socketio.on("connect")
+@socketio.on("connect", namespace=namespace)
 def handleConnect():
     pass
 
 
-@socketio.on("join-room")
+@socketio.on("join-room", namespace=namespace)
 def handleJoinRoom(data):
     global rooms, info
 
@@ -85,7 +86,7 @@ def handleJoinRoom(data):
         emit('error', {"message": "Error in joining: Invalid room code or token provided!", "error_code": 401})
 
 
-@socketio.on("exit-room")
+@socketio.on("exit-room", namespace=namespace)
 def handleExitRoom(data):
     global rooms, info
 
@@ -110,7 +111,7 @@ def handleExitRoom(data):
 
 
 # game execution handler
-@socketio.on("place-marker")
+@socketio.on("place-marker", namespace=namespace)
 def placeMarker(data):
     global rooms, info
 
@@ -211,7 +212,7 @@ def placeMarker(data):
                 info.pop(room_code)
 
 
-@socketio.on('disconnect')
+@socketio.on('disconnect', namespace=namespace)
 def handle_disconnect():
     global rooms, info
 

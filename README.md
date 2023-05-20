@@ -19,21 +19,22 @@
 
 - SSH into your vpc using security key:
   ```bash
-  $ ssh -i path-to-your-pem-file.pem ubuntu@ip
+  ssh -i path-to-your-pem-file.pem ubuntu@ip
   ```
 
-- Install NGINX
+- Install NGINX:
   ```bash
-  $ sudo apt update
-  $ sudo apt install nginx
+  sudo apt update
+  
+  sudo apt install nginx
   ```
 
-- open nginx configuration file:
+- Open nginx configuration file:
   ```bash
-  $ sudo nano /etc/nginx/sites-available/default
+  sudo nano /etc/nginx/sites-available/default
   ```
 
-- Clear the contents of the file and add the following lines (SAVE & EXIT).
+- Clear the contents of the file and add the following lines (SAVE & EXIT):
   ```
   $ server {
     server_name <your-domain.com> <your-vpc-ip-address>;
@@ -53,43 +54,65 @@
   }
   ```
 
-- Install gunicorn & gevent-websocket in global environment
+- Open bash profile:
   ```bash
-  $ pip install gunicorn gevent-websocket
+  sudo nano ~/.bash_profile
+  ```
+
+- Append these lines inside bash profile (SAVE & EXIT):
+  ```
+  export DB_USER="<your-db-username>"
+  export DB_PASS="<your-db-password>"
+  export SECRET_KEY="<your-secret-key(any random string)>"
+  ```
+  
+- Execute commands from a bash_profile in current shell environment:
+  ```bash
+  source ~/.bash_profile
+  ```
+
+- Install gunicorn & gevent-websocket in global environment:
+  ```bash
+  pip install gunicorn gevent-websocket
   ```
   
 - Activate virtualenv and install the modules:
   ```bash
-  $ virualenv project-directory
-  $ cd project-directory
-  $ source bin/activate
-  $ pip install -r requirements.txt
+  virtualenv project-directory
+  
+  cd project-directory
+  
+  source bin/activate
+  
+  pip install -r requirements.txt
   ```
 
 - Run the server using:
   ```bash
-  $ gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 -b 127.0.0.1:5000 app:app
+  gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 -b 127.0.0.1:5000 app:app
   ```
 
 - **DATABASE CONFIGURATION**
   - Run the following commands in your mysql command line:
-    - */tictactoe*:
+    - SQL commands for */tictactoe* route:
     ```bash
-    $ CREATE DATABASE tictactoe;
+    CREATE DATABASE tictactoe;
     
-    $ CREATE TABLE rooms ( 
-          room_code INT PRIMARY KEY, 
-          start_time DATETIME,
-          end_time DATETIME,
-          occupied BOOLEAN DEFAULT FALSE,
-          token CHAR(20)
-      );
+    USE tictactoe;
     
-    $ INSERT IGNORE INTO
-      rooms (room_code, start_time, end_time)
-      VALUES (1000, NOW(), NOW());
+    CREATE TABLE rooms ( 
+        room_code INT PRIMARY KEY, 
+        start_time DATETIME,
+        end_time DATETIME,
+        occupied BOOLEAN DEFAULT FALSE,
+        token CHAR(20)
+    );
     
-    $ COMMIT;
+    INSERT IGNORE INTO
+    rooms (room_code, start_time, end_time)
+    VALUES (1000, NOW(), NOW());
+    
+    COMMIT;
     ```
     
 
