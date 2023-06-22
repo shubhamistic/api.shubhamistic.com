@@ -1,6 +1,6 @@
 from flask import Blueprint, request, abort, send_file
 from os import path
-from routes.shubhamistic.getProjects import projects
+from routes.shubhamistic.getProjects import getProjects
 from routes.shubhamistic.createDataFiles import createJsonFiles
 
 
@@ -9,6 +9,7 @@ shubhamistic_routes = Blueprint('shubhamistic', __name__)
 
 # create json data files
 createJsonFiles()
+projects = getProjects()
 
 
 # Route for /shubhamistic/
@@ -28,6 +29,7 @@ def admin():
 
 @shubhamistic_routes.route('/projects', methods=['GET'])
 def getProjects():
+    global projects
     return projects
 
 
