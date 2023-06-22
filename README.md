@@ -19,7 +19,7 @@
 
 - SSH into your vpc using security key:
   ```bash
-  ssh -i path-to-your-pem-file.pem ubuntu@ip
+  ssh -i path-to-your-pem-file.pem ubuntu@ip-address
   ```
 
 - Install NGINX:
@@ -70,6 +70,11 @@
   ```bash
   source ~/.bash_profile
   ```
+  
+- **DATABASE CONFIGURATION**
+  - Run the following commands in your mysql terminal:
+    - SQL commands for */tictactoe* route: [*Visit*](/models/tictactoe/) 
+
 
 - Install gunicorn & gevent-websocket in global environment:
   ```bash
@@ -92,29 +97,6 @@
   gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 -b 127.0.0.1:5000 app:app
   ```
 
-- **DATABASE CONFIGURATION**
-  - Run the following commands in your mysql command line:
-    - SQL commands for */tictactoe* route:
-    ```bash
-    CREATE DATABASE tictactoe;
-    
-    USE tictactoe;
-    
-    CREATE TABLE rooms ( 
-        room_code INT PRIMARY KEY, 
-        start_time DATETIME,
-        end_time DATETIME,
-        occupied BOOLEAN DEFAULT FALSE,
-        token CHAR(20)
-    );
-    
-    INSERT IGNORE INTO
-    rooms (room_code, start_time, end_time)
-    VALUES (1000, NOW(), NOW());
-    
-    COMMIT;
-    ```
-    
 
 ## License
 Distributed under the MIT License. See [LICENSE](LICENSE) for more information.

@@ -1,10 +1,19 @@
 .DS_Store
 .idea/
+
 bin/
 include/
 lib/
-static/
-templates/
 __pycache__/
 pyvenv.cfg
 config/
+
+# ignore flask directories
+static/
+templates/
+
+# ignore data files except __init__ file
+assets/shubhamistic/images/*
+!assets/shubhamistic/images/__init__.txt
+assets/shubhamistic/json/*
+!assets/shubhamistic/json/__init__.txt
