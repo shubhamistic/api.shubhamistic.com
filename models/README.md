@@ -1,4 +1,6 @@
-## SQL commands for */tictactoe* route:
+# MODELS (MySQL)
+
+## */tictactoe*
 
 ```bash
 CREATE DATABASE tictactoe;

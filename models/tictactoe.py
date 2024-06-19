@@ -1,21 +1,15 @@
-import mysql.connector
-from os import environ
 from datetime import datetime, timedelta
 import random
 import string
-
-# connect to MySQL database
-conn = mysql.connector.connect(
-    host='localhost',
-    user=environ.get('DB_USER'),
-    password=environ.get('DB_PASS'),
-    database='tictactoe'
-)
-cur = conn.cursor()
+from . import get_db
 
 
 # function to find an empty room if available else create an empty room
 def findOrCreateEmptyRoom():
+    # initialize cursor
+    db = get_db()
+    cursor = db.connection.cursor()
+
     # Get the current date and time
     current_time = datetime.now()
 
@@ -29,8 +23,8 @@ def findOrCreateEmptyRoom():
         WHERE (%s) > end_time
         LIMIT 1;
     """
-    cur.execute(query, (current_time,))
-    room_code = cur.fetchone()
+    cursor.execute(query, (current_time,))
+    room_code = cursor.fetchone()
 
     # generating a new token for authentication
     token = str(''.join(random.choices(string.ascii_letters + string.digits + string.punctuation, k=20)))
@@ -41,16 +35,16 @@ def findOrCreateEmptyRoom():
         query = """
             SELECT MAX(room_code) FROM rooms;
         """
-        cur.execute(query)
-        room_code = cur.fetchone()[0] + 1
+        cursor.execute(query)
+        room_code = cursor.fetchone()[0] + 1
 
         query = """
             INSERT IGNORE INTO
             rooms (room_code, start_time, end_time, occupied, token) 
             VALUES (%s, %s, %s, %s, %s)
         """
-        cur.execute(query, (room_code, current_time, end_time, False, token))
-        conn.commit()
+        cursor.execute(query, (room_code, current_time, end_time, False, token))
+        db.connection.commit()
 
     else:
         room_code = room_code[0]
@@ -65,8 +59,8 @@ def findOrCreateEmptyRoom():
             token = (%s)
             WHERE room_code = (%s);     
         """
-        cur.execute(query, (current_time, end_time, token, room_code))
-        conn.commit()
+        cursor.execute(query, (current_time, end_time, token, room_code))
+        db.connection.commit()
 
     return {
         "room_code": room_code,
@@ -74,8 +68,12 @@ def findOrCreateEmptyRoom():
     }
 
 
-# function to join a player if room is empty otherwise return false
+# function to join a player if room is empty otherwise returns false
 def joinRoom(room_code):
+    # initialize cursor
+    db = get_db()
+    cursor = db.connection.cursor()
+
     # Get the current date and time
     current_time = datetime.now()
 
@@ -86,8 +84,8 @@ def joinRoom(room_code):
         WHERE room_code = (%s) AND (%s) < end_time AND occupied = FALSE
         LIMIT 1;
     """
-    cur.execute(query, (room_code, current_time))
-    token = cur.fetchone()
+    cursor.execute(query, (room_code, current_time))
+    token = cursor.fetchone()
 
     if token is None:
         return False
@@ -98,14 +96,18 @@ def joinRoom(room_code):
             SET occupied = TRUE
             WHERE room_code = (%s);    
         """
-        cur.execute(query, (room_code,))
-        conn.commit()
+        cursor.execute(query, (room_code,))
+        db.connection.commit()
 
         return token[0]
 
 
 # function to check if room is expired or not
 def isRoomValid(room_code, token):
+    # initialize cursor
+    db = get_db()
+    cursor = db.connection.cursor()
+
     # Get the current date and time
     current_time = datetime.now()
 
@@ -116,8 +118,8 @@ def isRoomValid(room_code, token):
         WHERE token = (%s) AND room_code = (%s) AND (%s) < end_time
         LIMIT 1;
     """
-    cur.execute(query, (token, room_code, current_time))
-    res = cur.fetchone()
+    cursor.execute(query, (token, room_code, current_time))
+    res = cursor.fetchone()
 
     if res is None:
         return False
@@ -128,19 +130,23 @@ def isRoomValid(room_code, token):
 # function to destroy the room session
 def destroySession(room_code, token):
     if isRoomValid(room_code, token):
+        # initialize cursor
+        db = get_db()
+        cursor = db.connection.cursor()
+
         # Get the current date and time
         current_time = datetime.now()
 
         # set the end_time to current time so that the room is treated as free as it is ended
         query = """
-                   UPDATE rooms
-                   SET
-                   end_time = (%s),
-                   occupied = FALSE
-                   WHERE room_code = (%s);    
-               """
-        cur.execute(query, (current_time, room_code))
-        conn.commit()
+            UPDATE rooms
+            SET
+            end_time = (%s),
+            occupied = FALSE
+            WHERE room_code = (%s);    
+        """
+        cursor.execute(query, (current_time, room_code))
+        db.connection.commit()
 
         return True
 

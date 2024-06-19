@@ -1,9 +1,9 @@
-from flask_socketio import SocketIO, emit
 from flask import request
-from models.tictactoe import database
+from . import socketio
 import random
+from models import tictactoe as ttt_db
 
-socketio = SocketIO()
+
 namespace = '/tictactoe'
 
 # information about which player joined in which room
@@ -29,7 +29,7 @@ def handleJoinRoom(data):
     participant_type = data["participant_type"]
 
     # check if provided room data is valid or not
-    if database.isRoomValid(room_code, token):
+    if ttt_db.isRoomValid(room_code, token):
         # handle host join event
         if participant_type == "host":
             # assign a marker ("X" or "O") to the player
@@ -58,10 +58,14 @@ def handleJoinRoom(data):
 
             # add host to room
             rooms[room_code] = [request.sid, None]
-            emit('host-joined', {
-                "message": "Host Joined Successfully!",
-                "marker": marker
-            })
+            socketio.emit(
+                'host-joined',
+                {
+                    "message": "Host Joined Successfully!",
+                    "marker": marker
+                },
+                namespace=namespace
+            )
 
         # handle guest join event
         if participant_type == "guest":
@@ -72,18 +76,26 @@ def handleJoinRoom(data):
             info[room_code]["guest"]["sid"] = request.sid
 
             # emit guest joined message to host
-            emit(
+            socketio.emit(
                 'guest-joined',
                 {
                     "message": "Guest Joined Successfully!",
                     "marker": info[room_code]["guest"]["marker"]
                 },
+                namespace=namespace,
                 room=rooms[room_code]
             )
 
     else:
-        # emit the join failed message
-        emit('error', {"message": "Error in joining: Invalid room code or token provided!", "error_code": 401})
+        # emit the join-failed message
+        socketio.emit(
+            'error',
+            {
+                "message": "Error in joining: Invalid room code or token provided!",
+                "error_code": 401
+            },
+            namespace=namespace
+        )
 
 
 @socketio.on("exit-room", namespace=namespace)
@@ -99,15 +111,29 @@ def handleExitRoom(data):
         # delete room data from rooms{}
         rooms.pop(room_code)
 
-        # if host left the game
+        # if the host left the game
         if participant_type == "host":
             # delete the room from info{} and emit guest that host left the game
-            emit('host-left', {"message": "host left the game!"}, room=info.pop(room_code)["guest"]["sid"])
+            socketio.emit(
+                'host-left',
+                {
+                    "message": "host left the game!"
+                },
+                namespace=namespace,
+                room=info.pop(room_code)["guest"]["sid"]
+            )
 
         # if guest left the game
         if participant_type == "guest":
             # delete the room from info{} and emit host that guest left the game
-            emit('guest-left', {"message": "guest left the game!"}, room=info.pop(room_code)["host"]["sid"])
+            socketio.emit(
+                'guest-left',
+                {
+                    "message": "guest left the game!"
+                },
+                namespace=namespace,
+                room=info.pop(room_code)["host"]["sid"]
+            )
 
 
 # game execution handler
@@ -125,7 +151,7 @@ def placeMarker(data):
         room = info[room_code]
 
         # player with "X" marker will always move first
-        # check if correct participant got the turn
+        # check if the correct participant got the turn
         if participant_type == info[room_code]["turn"]:
             # check if marker is already places there or not
             if room["board"][int(box_id[0])][int(box_id[1])] is not None:
@@ -135,13 +161,14 @@ def placeMarker(data):
             # box_id: "00" -> [0][0], (box_id is of type <str>)
             room["board"][int(box_id[0])][int(box_id[1])] = room[participant_type]["marker"]
             room["box_filled"] += 1
-            emit(
+            socketio.emit(
                 'marker-placed',
                 {
                     "message": "marker is placed!",
                     "marker": room[participant_type]["marker"],
                     "box_id": box_id
                 },
+                namespace=namespace,
                 room=rooms[room_code]
             )
 
@@ -179,34 +206,43 @@ def placeMarker(data):
 
             # check if someone has won or if all box are filled.
             if (winner_marker is not None) or (room["box_filled"] == 9):
-                # if host won
+                # if the host won
                 if winner_marker == room["host"]["marker"]:
-                    emit(
+                    socketio.emit(
                         'host-won',
                         {
                             "message": "Host Won!",
                             "winning_line": winning_line
                         },
+                        namespace=namespace,
                         room=rooms.pop(room_code)
                     )
 
                 # if guest won
                 if winner_marker == room["guest"]["marker"]:
-                    emit(
+                    socketio.emit(
                         'guest-won',
                         {
                             "message": "Guest Won!",
                             "winning_line": winning_line
                         },
+                        namespace=namespace,
                         room=rooms.pop(room_code)
                     )
 
                 # if all boxes are filled (match draw)
                 if (room["box_filled"] == 9) and (winner_marker is None):
-                    emit('match-draw', {"message": "Match Draw!"}, room=rooms.pop(room_code))
+                    socketio.emit(
+                        'match-draw',
+                        {
+                            "message": "Match Draw!"
+                        },
+                        namespace=namespace,
+                        room=rooms.pop(room_code)
+                    )
 
-                # delete the room session from database also
-                database.destroySession(room_code, token)
+                # delete the room session from a database also
+                ttt_db.destroySession(room_code, token)
 
                 # also delete it from the info{}
                 info.pop(room_code)
@@ -219,8 +255,14 @@ def handle_disconnect():
     # search the room code of the client
     for room_code, client_info in rooms.items():
         if request.sid in client_info:
-            # if client gets disconnected than delete the room
-            emit('room-expired', {"message": "Room is Expired!"}, room=rooms.pop(room_code))
+            # if a client gets disconnected than delete the room
+            socketio.emit(
+                'room-expired',
+                {
+                    "message": "Room is Expired!"
+                },
+                namespace=namespace,
+                room=rooms.pop(room_code))
 
             # also delete it from the info{}
             info.pop(room_code)

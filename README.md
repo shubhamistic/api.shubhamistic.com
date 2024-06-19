@@ -14,18 +14,21 @@
   </p>
 </div>
 
-
 ## SETUP (Ubuntu)
 
-- SSH into your vpc using security key:
+```bash
+sudo apt update
+```
+
+- Install required packages for mysqlclient:
   ```bash
-  ssh -i path-to-your-pem-file.pem ubuntu@ip-address
+  sudo apt install pkg-config
+  sudo apt install libmysqlclient-dev
+  sudo apt-get install libpython3.9-dev default-libmysqlclient-dev build-essential
   ```
 
 - Install NGINX:
   ```bash
-  sudo apt update
-  
   sudo apt install nginx
   ```
 
@@ -34,24 +37,30 @@
   sudo nano /etc/nginx/sites-available/default
   ```
 
-- Clear the contents of the file and add the following lines (SAVE & EXIT):
+  Clear the contents of the file and add the following lines (SAVE & EXIT):
   ```
-  $ server {
-    server_name <your-domain.com> <your-vpc-ip-address>;
+  server {
+    server_name <example.com> <vpc-ip-address>;
     location / {
         include proxy_params;
-        proxy_pass http://localhost:5000;
+        proxy_pass http://localhost:5001;
     }
 
     location /socket.io {
-        include proxy_params;
-        proxy_http_version 1.1;
-        proxy_buffering off;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "Upgrade";
-        proxy_pass http://localhost:5000/socket.io;
+      include proxy_params;
+      proxy_http_version 1.1;
+      proxy_buffering off;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "Upgrade";
+      proxy_pass http://localhost:5001/socket.io;
     }
   }
+  ```
+  
+- Make sure nginx is listening to port 80 and 443:
+  ```bash
+  sudo iptables -I INPUT -p TCP --dport 80 -j ACCEPT
+  sudo iptables -I INPUT -p TCP --dport 443 -j ACCEPT
   ```
 
 - Open bash profile:
@@ -61,34 +70,46 @@
 
 - Append these lines inside bash profile (SAVE & EXIT):
   ```
-  export DB_USER="<your-db-username>"
-  export DB_PASS="<your-db-password>"
   export SECRET_KEY="<your-secret-key(any random string)>"
+  export DB_USER="<your mysql username>"
+  export DB_PASS="<your mysql password>"
   ```
   
-- Execute commands from a bash_profile in current shell environment:
+- Execute commands from a bash_profile in the current shell environment:
   ```bash
   source ~/.bash_profile
   ```
   
-- **DATABASE CONFIGURATION**
-  - Run the following commands in your mysql terminal:
-    - SQL commands for */tictactoe* route: [*Visit*](/models/tictactoe/) 
-
-
-- Install gunicorn & gevent-websocket in global environment:
+- Install MySQL:
   ```bash
-  pip install gunicorn gevent-websocket
+  sudo apt install mysql-server
   ```
   
-- Activate virtualenv and install the modules:
+- Change MySQL password:
   ```bash
-  virtualenv project-directory
-  
-  cd project-directory
-  
+  sudo mysql
+  ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';
+  ```
+
+- **DATABASE CONFIGURATION**
+  - Run these [*commands*](/models/) in your mysql terminal
+
+- Install virtualenv:
+  ```bash
+  sudo apt install virtualenv
+  ```
+
+- Install the repository:
+  ```bash
+  git clone https://github.com/shubhamistic/api.shubhamistic.com.git
+  ```
+
+- Activate virtualenv and install the modules (use byobu):
+  ```bash
+  virtualenv api.shubhamistic.com
+  cd api.shubhamistic.com
+  source ~/.bash_profile
   source bin/activate
-  
   pip install -r requirements.txt
   ```
 
@@ -97,9 +118,7 @@
   gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 -b 127.0.0.1:5000 app:app
   ```
 
-
-## License
-Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
+## [LICENSE](LICENSE)
 
 
 ## About the Author

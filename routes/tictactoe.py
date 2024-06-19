@@ -1,24 +1,27 @@
 from flask import Blueprint, request, abort
 import json
-from models.tictactoe import database
+from models import tictactoe as ttt_db
+
 
 # Create a blueprint for /tictactoe/ route
 tictactoe_routes = Blueprint('tictactoe', __name__)
 
 
-# Route for /tictactoe/
 @tictactoe_routes.route('/')
-def admin():
-    # Logic to handle the /tictactoe/ request
+def index():
     return {
-        "message": "Welcome to tictactoe!",
-        "routes": ["/generate-room-code GET", "/join-room POST", "/exit-room POST"]
+        "inside": "/tictactoe",
+        "routes": [
+            "/generate-room-code [GET]",
+            "/join-room [POST]",
+            "/exit-room [POST]"
+        ]
     }
 
 
 @tictactoe_routes.route('/generate-room-code', methods=['GET'])
 def generateRoomCode():
-    room = database.findOrCreateEmptyRoom()
+    room = ttt_db.findOrCreateEmptyRoom()
 
     return {
         "message": "Request Successful!",
@@ -34,7 +37,7 @@ def joinRoom():
         room_code = int(json.loads(data)['room_code'])
 
         # check in the database if room code is available or not
-        token = database.joinRoom(room_code)
+        token = ttt_db.joinRoom(room_code)
         if token:
             return {
                 "message": "Joined Successfully!",
@@ -51,7 +54,10 @@ def joinRoom():
 
     except ValueError:
         # if wrong input received from the user end
-        abort(400, "Wrong data provided, room_code must be of type <int>!")
+        abort(
+            400,
+            "Wrong data provided, room_code must be of type <int>!"
+        )
 
 
 @tictactoe_routes.route('/exit-room', methods=['POST'])
@@ -61,8 +67,8 @@ def exitRoom():
         room_code = int(json.loads(data)['room_code'])
         token = json.loads(data)['token']
 
-        # if exited successfully, below function will return true otherwise false
-        if database.destroySession(room_code, token):
+        # if exited successfully, the below function will return true otherwise false
+        if ttt_db.destroySession(room_code, token):
             return {
                 "message": "Exited Successfully!",
                 "data_received": [room_code, token],
@@ -77,4 +83,7 @@ def exitRoom():
 
     except (ValueError, TypeError):
         # if wrong input received from the user end
-        abort(400, "Wrong data provided, room_code and token must be of type <int> & <str> respectively!")
+        abort(
+            400,
+            "Wrong data provided, room_code and token must be of type <int> & <str> respectively!"
+        )

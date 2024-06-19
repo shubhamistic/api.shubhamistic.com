@@ -1,1 +1,0 @@
-# images for /shubhamistic routes are stored in this directory.
